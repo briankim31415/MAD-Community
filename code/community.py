@@ -75,7 +75,7 @@ class Community:
         # Iterate through agents for num_rounds
         response = {}
         for i in range(num_rounds):
-            print(f"Round {i+1}...\n" if verbose else "", end='')
+            print(f"\nRound {i+1}...\n" if verbose else "", end='')
             for j, agent in enumerate(self.agent_list):
                 # Check if it's the last round and last agent
                 is_end = (i == num_rounds - 1) and (j == num_agents - 1)

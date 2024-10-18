@@ -98,5 +98,5 @@ class Network:
 
         # Get and return judge's answer
         judge_response = self.judge.ask(combined_responses)
-        print(f" - Judge Verdict: {judge_response}\n" if verbose else "", end='')
+        print(f"\n\n - Judge Verdict: {judge_response}\n\n" if verbose else "", end='')
         return judge_response

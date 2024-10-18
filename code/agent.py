@@ -45,7 +45,8 @@ class Agent:
         self.name = name
         self.temperature = temperature
         self.model_name = chat_models[agent_model_index]
-        self.meta_prompt = [{"role": "system", "content": f"{meta_prompt.format(question=question)}"}]
+        format_meta_prompt = meta_prompt.replace("{insert_question}", question)
+        self.meta_prompt = [{"role": "system", "content": format_meta_prompt}]
         self.client = OpenAI()
 
 
@@ -167,7 +168,7 @@ class Judge(Agent):
         """
         super().__init__(name, question, temperature)
         self.model_name = chat_models[judge_model_index]
-        self.meta_prompt = [{"role": "system", "content": f"{judge_meta_prompt.format(question=question)}"}]
+        self.meta_prompt = [{"role": "system", "content": f"{judge_meta_prompt.format(insert_question=question)}"}]
     
     def ask(self, community_answers: "list[str]") -> str:
         """

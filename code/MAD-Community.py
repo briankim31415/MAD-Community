@@ -8,6 +8,7 @@ from config_loader import load_config
 config = load_config()
 data_path = config['data_path']
 output_path = config['output_path']
+random_order = config['random_order']
 verbose = config['verbose']
 num_questions = config['num_questions']
 num_communities = config['num_communities']
@@ -40,14 +41,17 @@ class MADCommunity:
 
     def parse_data(self) -> pd.DataFrame:
         """
-        Parse data from CSV file
+        Parse data from CSV file and return ordered or random questions
         Args:
-            file_name (str): File name
+            None
         Returns:
             pd.DataFrame: Dataframe
         """
         data = pd.read_csv(f"../data/{data_path}")
-        return data.head(num_questions)
+        if random_order:
+            return data.sample(n=num_questions)
+        else:
+            return data.head(num_questions)
 
 
     def get_statistics(self) -> None:
@@ -69,7 +73,7 @@ class MADCommunity:
         # Loop through questions and calculate statistics
         for _, question in enumerate(self.answer_list):
             correct_answer = question['correct_answer']
-            community_lists = question['agent_answers']
+            community_lists = [[int(answer) for answer in com] for com in question['agent_answers']]
 
             # perc_com_cor: percentage of communities that got the correct answer
             community_answers = [1 if com[-1] == correct_answer else 0 for com in community_lists]
@@ -86,11 +90,11 @@ class MADCommunity:
         # Add new statistics
         perc_com_cor = [round(perc / data['total'], 3) for perc in perc_com_cor]
         for i in range(num_communities):
-            data[f'perc_com_cor_{i}'] = perc_com_cor[i]
+            data[f'Community {i+1} Answer % Correct'] = perc_com_cor[i]
         
         perc_agent_cor = [round(perc / data['total'], 3) for perc in perc_agent_cor]
         for i in range(num_communities):
-            data[f'perc_agent_cor_{i}'] = perc_agent_cor[i]
+            data[f'Community {i+1} Agents % Correct'] = perc_agent_cor[i]
 
         # Save statistics to JSON file
         with open(output_path, 'w') as f:
@@ -103,14 +107,15 @@ class MADCommunity:
         Args:
             None
         Returns:
-            dict: Answer statistics
+            None
         """
+        # Init counters
         count_correct = 0
         count_total = 0
 
         # Loop through questions and print TQDM progress bar
         for question in tqdm(self.data.itertuples(), desc="Processing", total=len(self.data), ncols=100, bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"):
-            print(f" ########## QUESTION {question[0] + 1} ##########\n" if verbose else "", end='')
+            print(f"\n\n ########## QUESTION {question[0] + 1} ##########\n" if verbose else "", end='')
 
             # Format question and answer
             format_question = f"Context paragraph: {question[2]}\n\nQuestion: {question[3]}\n\nOption 1: {question[4]}\nOption 2: {question[5]}\nOption 3: {question[6]}\nOption 4: {question[7]}"
@@ -124,17 +129,17 @@ class MADCommunity:
                 # If too many invalid responses, skip question
                 count += 1
                 if count >= 20:
-                    print("Too many invalid response. Skipping question...")
+                    print("\n\nToo many invalid response. Skipping question...\n\n")
                     break
 
                 # Keep asking for response until valid
                 try:
                     response = int(network.get_judge_answer().strip())
                     if response not in range(1, 5):
-                        print("Invalid response.")
+                        print("\n\nInvalid response\n\n.")
                         response = None
                 except ValueError:
-                    print("Invalid response.")
+                    print("\n\nInvalid response.\n\n")
             
             # Skip question if response is None
             if response is None:
@@ -146,7 +151,7 @@ class MADCommunity:
 
             # Check if answer is correct
             correct = (response == answer)
-            print(f"{'Correct!' if correct else 'Wrong!'} The answer is...\nOption {answer}: {question[answer + 3]}\n" if verbose else "", end='')
+            print(f"{'Correct!' if correct else 'Wrong!'} The answer is...\nOption {answer}: {question[answer + 3]}\n\n" if verbose else "", end='')
 
             # Update correct/total statistics
             count_correct += 1 if correct else 0
@@ -161,3 +166,4 @@ if __name__ == "__main__":
     # Run MAD-Community on CosmosQA dataset
     cosmosqa = MADCommunity()
     cosmosqa.run_cosmosqa()
+    cosmosqa.get_statistics()
