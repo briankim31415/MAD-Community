@@ -14,6 +14,17 @@ num_communities = config['num_communities']
 
 
 class MADCommunity:
+    """
+    MAD-Community class to run the network
+    Attributes:
+        answer_list (list): List of answers from agents
+        data (pd.DataFrame): Dataframe
+    Methods:
+        __init__() -> None: Initialize MAD-Community
+        parse_data() -> pd.DataFrame: Parse data from CSV file
+        get_statistics() -> None: Calculates and dumps MAD-Community statistics to JSON file
+        run_cosmosqa() -> None: Run MAD-Community on CosmosQA dataset
+    """
     def __init__(self) -> None:
         """
         Initialize MAD-Community
@@ -147,9 +158,6 @@ class MADCommunity:
         
 
 if __name__ == "__main__":
-    """
-    Run MAD-Community
-    """
     # Run MAD-Community on CosmosQA dataset
     cosmosqa = MADCommunity()
     cosmosqa.run_cosmosqa()
