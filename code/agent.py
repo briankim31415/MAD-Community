@@ -4,17 +4,12 @@ import backoff
 import json
 
 # Load config
-from config_loader import load_config
+from config_loader import *
 config = load_config()
 sleep_time = config['sleep_time']
 chat_models = config['chat_models']
 agent_model_index = config['agent_model_index']
-meta_prompt = config['meta_prompt']
-ask_prompt = config['ask_prompt']
-ending_prompt = config['ending_prompt']
 judge_model_index = config['judge_model_index']
-judge_meta_prompt = config['judge_meta_prompt']
-judge_prompt = config['judge_prompt']
 
 
 class Agent:
@@ -25,6 +20,8 @@ class Agent:
         temperature (float): Temperature for sampling
         model_name (str): OpenAI model name
         meta_prompt (list): Meta-prompt for the agent
+        user_prompt (str): User prompt for the agent
+        end_prompt (str): Ending prompt for the agent
         client (OpenAI): OpenAI client
     Methods:
         query(messages: list) -> str: Query OpenAI API
@@ -41,12 +38,17 @@ class Agent:
         Attributes:
             model_name (str): OpenAI model name
             meta_prompt (list): Meta-prompt for the agent
+            user_prompt (str): User prompt for the agent
+            end_prompt (str): Ending prompt for the agent
+            client (OpenAI): OpenAI client
         """
         self.name = name
         self.temperature = temperature
         self.model_name = chat_models[agent_model_index]
-        format_meta_prompt = meta_prompt.replace("{insert_question}", question)
+        format_meta_prompt = load_agent_meta_prompt().format(insert_question=question)
         self.meta_prompt = [{"role": "system", "content": format_meta_prompt}]
+        self.user_prompt = load_agent_user_prompt()
+        self.end_prompt = load_agent_end_prompt()
         self.client = OpenAI()
 
 
@@ -112,7 +114,7 @@ class Agent:
             JSON: Agent's response
         """
         # Set prompt based on whether it's the last round
-        prompt = ending_prompt if end else ask_prompt
+        prompt = self.end_prompt if end else self.user_prompt
         prompt = prompt.format(agent_name=self.name)
         
         # Format community chat history
@@ -165,10 +167,13 @@ class Judge(Agent):
         Attributes:
             model_name (str): OpenAI model name
             meta_prompt (list): Meta-prompt for the agent
+            user_prompt (str): User prompt for the judge
         """
         super().__init__(name, question, temperature)
         self.model_name = chat_models[judge_model_index]
-        self.meta_prompt = [{"role": "system", "content": f"{judge_meta_prompt.format(insert_question=question)}"}]
+        format_meta_prompt = load_judge_meta_prompt().format(insert_question=question)
+        self.meta_prompt = [{"role": "system", "content": format_meta_prompt}]
+        self.user_prompt = load_judge_user_prompt()
     
     def ask(self, community_answers: "list[str]") -> str:
         """
@@ -180,7 +185,7 @@ class Judge(Agent):
         """
         # Format community answers
         answers = [{"role": "user", "content": f"{answer}"} for answer in community_answers]
-        messages = self.meta_prompt + answers + [{"role": "user", "content": f"{self.name}: {judge_prompt}"}]
+        messages = self.meta_prompt + answers + [{"role": "user", "content": f"{self.user_prompt}"}]
         
         # Query OpenAI API and return response
         return self.query(messages)

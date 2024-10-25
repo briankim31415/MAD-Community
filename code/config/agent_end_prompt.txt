@@ -1,0 +1,1 @@
+{agent_name}, you are the last debater. Based on what has been said during this debate, provide a final consensus answer choice for the debate along with reasoning. Please output your answer in the described json format.

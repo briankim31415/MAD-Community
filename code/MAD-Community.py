@@ -2,6 +2,8 @@ import pandas as pd
 from network import Network
 import json
 from tqdm import tqdm
+from openai import OpenAI
+import time
 
 # Load config
 from config_loader import load_config
@@ -99,6 +101,11 @@ class MADCommunity:
         # Save statistics to JSON file
         with open(output_path, 'w') as f:
             json.dump(data, f, indent=4)
+
+        # Print all contents of statistics JSON file
+        with open(output_path, 'r') as f:
+            print("\n\n", json.dumps(json.load(f), indent=4))
+
 
 
     def run_cosmosqa(self) -> None:

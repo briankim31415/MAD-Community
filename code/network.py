@@ -76,7 +76,7 @@ class Network:
         for i, community in enumerate(self.communities):
             # Get community final responses
             print(f"\n >> COMMUNITY {i+1} <<\n" if verbose else "", end='')
-            response = community.run_debate()
+            response = community.get_community_answer()
             com_responses.append(response)
 
             # Get agent answers

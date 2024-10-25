@@ -19,7 +19,8 @@ class Community:
     Methods:
         create_agents(question: str, temperature: float) -> list: Create agents in the community
         get_answer_list() -> list: Get answer list from agents
-        run_debate() -> json: Debate among agents in the community
+        get_community_answer() -> json: Get final community answer
+        run_debate() -> None: Debate among agents in the community
     """
     def __init__(self, question: str, temperature: float=1.0) -> None:
         """
@@ -62,25 +63,35 @@ class Community:
             list: List of answers from agents
         """
         return self.answer_list
+    
+    def get_community_answer(self) -> json:
+        """
+        Initiate debate and get community answer
+        Args:
+            None
+        Returns:
+            json: Community answer
+        """
+        self.run_debate()
+        return self.answer_list[-1]
 
 
-    def run_debate(self) -> json:
+    def run_debate(self) -> None:
         """
         Debate among agents in the community
         Args:
             None
         Returns:
-            json: Final community response
+            None
         """
         # Iterate through agents for num_rounds
-        response = {}
         for i in range(num_rounds):
             print(f"\nRound {i+1}...\n" if verbose else "", end='')
             for j, agent in enumerate(self.agent_list):
                 # Check if it's the last round and last agent
                 is_end = (i == num_rounds - 1) and (j == num_agents - 1)
 
-                # FUTURE TESTING: Keep chat_hist max length to num_agents
+                # TODO FUTURE TESTING: Keep chat_hist max length to num_agents
                 # if len(self.chat_hist) >= num_agents:
                     # self.chat_hist = self.chat_hist[-num_agents:]
 
@@ -88,6 +99,3 @@ class Community:
                 response = agent.ask(self.chat_hist, is_end)
                 self.answer_list.append(response['Answer'])
                 print(f"Round {i+1}, {response['Name']} chose Option {response['Answer']}: {response['Reason']}\n" if verbose else "", end='')
-        
-        # Return final community response
-        return response

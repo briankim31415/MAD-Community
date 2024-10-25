@@ -1,0 +1,14 @@
+{
+    "verbose": false,
+    "data_path": "cosmosqa_train.csv",
+    "output_path": "./outputs/cosmosqa_stats.json",
+    "random_order": true,
+    "sleep_time": 0.5,
+    "num_questions": 2,
+    "num_communities": 2,
+    "num_agents": 2,
+    "num_rounds": 2,
+    "chat_models": ["gpt-3.5-turbo", "gpt-4o"],
+    "agent_model_index": 0,
+    "judge_model_index": 0
+}
