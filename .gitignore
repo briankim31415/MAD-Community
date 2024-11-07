@@ -2,3 +2,4 @@ mad-community/
 __pycache__/
 .vscode/
 outputs/
+data/gpqa_dataset/

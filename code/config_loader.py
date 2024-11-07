@@ -10,15 +10,11 @@ def load_config() -> json:
     return _config
 
 def load_agent_meta_prompt() -> str:
-    with open('./config/agent_meta_prompt.txt', 'r') as f:
+    with open('./config/agent_start_meta_prompt.txt', 'r') as f:
         return f.read()
 
 def load_agent_user_prompt() -> str:
     with open('./config/agent_user_prompt.txt', 'r') as f:
-        return f.read()
-
-def load_agent_end_prompt() -> str:
-    with open('./config/agent_end_prompt.txt', 'r') as f:
         return f.read()
 
 def load_judge_meta_prompt() -> str:

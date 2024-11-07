@@ -1,6 +1,5 @@
 from agent import Judge
 from community import Community
-import numpy as np
 
 # Load config
 from config_loader import load_config
@@ -46,7 +45,7 @@ class Network:
             list: List of communities in the network
         """
         com_list = []
-        community_temps = np.linspace(0.5, 1.5, num_communities).tolist()
+        community_temps = [1] * num_communities
         for temp in community_temps:
             C = Community(question, temp)
             com_list.append(C)
@@ -74,13 +73,12 @@ class Network:
         """
         com_responses = []
         for i, community in enumerate(self.communities):
-            # Get community final responses
+            # Save agent answers and get community final responses
             print(f"\n >> COMMUNITY {i+1} <<\n" if verbose else "", end='')
-            response = community.get_community_answer()
-            com_responses.append(response)
+            community_answers = community.get_chat_hist()
+            com_responses.append(community_answers[-1])
+            self.agent_answers.append(community_answers)
 
-            # Get agent answers
-            self.agent_answers.append(community.get_answer_list())
         return com_responses
 
 
@@ -98,5 +96,5 @@ class Network:
 
         # Get and return judge's answer
         judge_response = self.judge.ask(combined_responses)
-        print(f"\n\n - Judge Verdict: {judge_response}\n\n" if verbose else "", end='')
-        return judge_response
+        print(f"\n\n - Judge Verdict: {judge_response['Answer']}\n\n" if verbose else "", end='')
+        return judge_response['Answer']

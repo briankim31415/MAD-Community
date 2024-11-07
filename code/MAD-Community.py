@@ -4,6 +4,7 @@ import json
 from tqdm import tqdm
 from openai import OpenAI
 import time
+import random
 
 # Load config
 from config_loader import load_config
@@ -105,7 +106,50 @@ class MADCommunity:
         # Print all contents of statistics JSON file
         with open(output_path, 'r') as f:
             print("\n\n", json.dumps(json.load(f), indent=4))
+    
 
+    def run_baseline(self) -> None:
+        count_correct = 0
+        count_total = 0
+        for question in tqdm(self.data.itertuples(), desc="Processing", total=len(self.data), ncols=100, bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"):
+            print(f"\n\n ########## QUESTION {question[0] + 1} ##########\n" if verbose else "", end='')
+
+            format_question = f"Context paragraph: {question[2]}\n\nQuestion: {question[3]}\n\nOption 1: {question[4]}\nOption 2: {question[5]}\nOption 3: {question[6]}\nOption 4: {question[7]}\n\nChoose the correct option (1-4) and strictly output **a single integer**."
+            answer = question[8] + 1
+
+            client = OpenAI()
+            messages = [{"role": "user", "content": format_question}]
+            done = False
+            count = 0
+            while not done:
+                count += 1
+                if count >= 20:
+                    print("\n\nToo many invalid response. Skipping question...\n\n")
+                    break
+                time.sleep(0.5)
+                try:
+                    response = client.chat.completions.create(
+                        model='gpt-4o-mini',
+                        messages=messages
+                    )
+
+                    # Extract output from response and return it
+                    output = int(response.choices[0].message.content)
+                    done = True
+            
+                # Raise OpenAIError if there's an error
+                except Exception as e:
+                    print(e)
+            
+
+            correct = (output == answer)
+            print(f"{'Correct!' if correct else 'Wrong!'} The answer is...\nOption {answer}: {question[answer + 3]}\n\n" if verbose else "", end='')
+
+            count_correct += 1 if correct else 0
+            count_total += 1
+
+            with open(output_path, 'w') as f:
+                json.dump({'correct': count_correct, 'total': count_total}, f, indent=4)
 
 
     def run_cosmosqa(self) -> None:
@@ -168,9 +212,80 @@ class MADCommunity:
             with open(output_path, 'w') as f:
                 json.dump({'correct': count_correct, 'total': count_total}, f, indent=4)
         
+        
+    def run_gpqa(self) -> None:
+        """
+        Run MAD-Community on GPQA dataset
+        Args:
+            None
+        Returns:
+            None
+        """
+        # Init counters
+        count_correct = 0
+        count_total = 0
+        
+        # GPQA Column indices
+        question_col_idx = self.data.columns.get_loc("Question") + 1
+        correct_col_idx = self.data.columns.get_loc("Correct Answer") + 1
+        incorrect1_col_idx = self.data.columns.get_loc("Incorrect Answer 1") + 1
+        incorrect2_col_idx = self.data.columns.get_loc("Incorrect Answer 2") + 1
+        incorrect3_col_idx = self.data.columns.get_loc("Incorrect Answer 3") + 1
+        canary_col_idx = self.data.columns.get_loc("Canary String") + 1
+
+        # Loop through questions and print TQDM progress bar
+        for row in tqdm(self.data.itertuples(), desc="Processing", total=len(self.data), ncols=100, bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"):
+            question_id = row[canary_col_idx]
+            print(f"\n\n ########## QUESTION {count_total+1} {{{question_id}}} ##########\n" if verbose else "", end='')
+
+            # Format question and answer
+            question = row[question_col_idx]
+            choices = [row[correct_col_idx], row[incorrect1_col_idx], row[incorrect2_col_idx], row[incorrect3_col_idx]]
+            random.shuffle(choices)
+            correct_idx = choices.index(row[correct_col_idx])
+
+            prompt = question + ("\n\n" + "\n".join([f"{i+1}. {choice}" for i, choice in enumerate(choices)]))
+
+            # Get answer from network
+            network = Network(question=prompt)
+            tries = 0
+            while True:
+                if tries >= 5:
+                    print(f"\n\nToo many invalid response. Skipping question {question_id}\n\n")
+                    break
+
+                try:
+                    response = network.get_judge_answer()
+                    tries += 1
+                    if 1 <= response <= 4:
+                        break
+                except Exception as e:
+                    print(f"Try number: {tries} >> {e}")
+                    continue
+
+            
+            # Store all agents answer list for statistics
+            stats = {'correct_answer': correct_idx + 1, 'agent_answers': network.get_agent_answers()}
+            self.answer_list.append(stats)
+
+            # Check if answer is correct
+            correct = (correct_idx + 1 == response)
+            print(f"{'Correct!' if correct else 'Wrong!'} The answer is...\nOption {correct_idx + 1}: {choices[correct_idx]}\n\n" if verbose else "", end='')
+
+            # Update correct/total statistics
+            count_correct += 1 if correct else 0
+            count_total += 1
+
+            # Save correct count to JSON file
+            with open(output_path, 'w') as f:
+                json.dump({'correct': count_correct, 'total': count_total}, f, indent=4)
+
 
 if __name__ == "__main__":
     # Run MAD-Community on CosmosQA dataset
-    cosmosqa = MADCommunity()
-    cosmosqa.run_cosmosqa()
-    cosmosqa.get_statistics()
+    # cosmosqa = MADCommunity()
+    # cosmosqa.run_cosmosqa()
+    # cosmosqa.get_statistics()
+    # cosmosqa.run_baseline()
+    gpqa = MADCommunity()
+    gpqa.run_gpqa()

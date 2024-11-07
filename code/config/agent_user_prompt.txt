@@ -1,1 +1,1 @@
-{agent_name}, it is now your turn. You may agree or disagree with the other debaters. Provide your chosen option and reason in the described json format.
+{agent_name}, it is now your turn. You may agree or disagree with the other debaters. Correct the other responses and provide your chosen option and reason.

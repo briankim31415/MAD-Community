@@ -1,5 +1,5 @@
 from agent import Agent
-import json
+from agent import Judge
 
 # Load config
 from config_loader import load_config
@@ -34,8 +34,8 @@ class Community:
             agent_list (list): List of agents in the community
         """
         self.chat_hist = []
-        self.answer_list = []
         self.agent_list = self.create_agents(question, temperature)
+        self.judge = Judge(question)
         
 
     def create_agents(self, question: str, temperature: float) -> list:
@@ -54,7 +54,7 @@ class Community:
         return agent_list
     
 
-    def get_answer_list(self) -> list:
+    def get_chat_hist(self) -> list:
         """
         Get answer list from agents
         Args:
@@ -62,18 +62,14 @@ class Community:
         Returns:
             list: List of answers from agents
         """
-        return self.answer_list
-    
-    def get_community_answer(self) -> json:
-        """
-        Initiate debate and get community answer
-        Args:
-            None
-        Returns:
-            json: Community answer
-        """
         self.run_debate()
-        return self.answer_list[-1]
+        
+        # Get final judge answer for community
+        final_answer = self.judge.ask(self.chat_hist[-num_agents:])
+        self.chat_hist.append(final_answer)
+        print(f"Community Judge chose Option {final_answer['Answer']}\n   {final_answer['Reason']}\n\n" if verbose else "", end='')
+        
+        return self.chat_hist
 
 
     def run_debate(self) -> None:
@@ -86,7 +82,7 @@ class Community:
         """
         # Iterate through agents for num_rounds
         for i in range(num_rounds):
-            print(f"\nRound {i+1}...\n" if verbose else "", end='')
+            print(f"\n  [ Round {i+1} ]\n" if verbose else "", end='')
             for j, agent in enumerate(self.agent_list):
                 # Check if it's the last round and last agent
                 is_end = (i == num_rounds - 1) and (j == num_agents - 1)
@@ -97,5 +93,5 @@ class Community:
 
                 # Get response from agent
                 response = agent.ask(self.chat_hist, is_end)
-                self.answer_list.append(response['Answer'])
-                print(f"Round {i+1}, {response['Name']} chose Option {response['Answer']}: {response['Reason']}\n" if verbose else "", end='')
+                self.chat_hist.append(response)
+                print(f"{response['Name']} chose Option {response['Answer']}\n   {response['Reason']}\n\n" if verbose else "", end='')

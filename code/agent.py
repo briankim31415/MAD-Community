@@ -1,7 +1,7 @@
 from openai import OpenAI, OpenAIError
 import time
 import backoff
-import json
+from pydantic import BaseModel
 
 # Load config
 from config_loader import *
@@ -10,6 +10,10 @@ sleep_time = config['sleep_time']
 chat_models = config['chat_models']
 agent_model_index = config['agent_model_index']
 judge_model_index = config['judge_model_index']
+
+class Format(BaseModel):
+    answer: int
+    reason: str
 
 
 class Agent:
@@ -48,7 +52,6 @@ class Agent:
         format_meta_prompt = load_agent_meta_prompt().format(insert_question=question)
         self.meta_prompt = [{"role": "system", "content": format_meta_prompt}]
         self.user_prompt = load_agent_user_prompt()
-        self.end_prompt = load_agent_end_prompt()
         self.client = OpenAI()
 
 
@@ -64,15 +67,15 @@ class Agent:
         # Query OpenAI API
         time.sleep(sleep_time)
         try:
-            response = self.client.chat.completions.create(
+            response = self.client.beta.chat.completions.parse(
                 model=self.model_name,
                 messages=messages,
-                temperature=self.temperature
+                temperature=self.temperature,
+                response_format=Format
             )
 
             # Extract output from response and return it
-            output = response.choices[0].message.content
-            return output
+            return response.choices[0].message.parsed
         
         # Raise OpenAIError if there's an error
         except OpenAIError as ai_err:
@@ -104,7 +107,7 @@ class Agent:
         return agent_chat_hist
     
 
-    def ask(self, chat_hist: list, end: bool=False) -> json:
+    def ask(self, chat_hist: list, end: bool=False) -> dict:
         """
         Ask the agent a question based on the chat history
         Args:
@@ -113,35 +116,14 @@ class Agent:
         Returns:
             JSON: Agent's response
         """
-        # Set prompt based on whether it's the last round
-        prompt = self.end_prompt if end else self.user_prompt
-        prompt = prompt.format(agent_name=self.name)
-        
         # Format community chat history
         agent_chat_hist = self.format_chat_hist(chat_hist)
-        messages = self.meta_prompt + agent_chat_hist + [{"role": "user", "content": prompt}]
+        messages = self.meta_prompt + agent_chat_hist + [{"role": "user", "content": self.user_prompt.format(agent_name=self.name)}]
 
-        # TODO: Add retry for max number of tries, otherwise fail
-        # Query OpenAI API and extract JSON output
-        while True:
-            output = self.query(messages)
-            try:
-                json_output = json.loads(output)
-
-                # Check if JSON output contains 'Answer' and 'Reason' keys
-                if all(key in json_output for key in ['Answer', 'Reason']):
-                    # Add agent's name to JSON output
-                    json_output['Name'] = self.name
-                    break
-            except json.JSONDecodeError:
-                # If JSON output is invalid, retry
-                print("Invalid JSON response. Retrying...")
-                # Extra sleep time just in case
-                time.sleep(sleep_time)
-                continue
-        
-        # Return JSON output
-        return json_output
+        # Query OpenAI API and return output
+        query_output = self.query(messages)
+        output = {"Name": self.name, "Answer": query_output.answer, "Reason": query_output.reason}
+        return output
     
     
 class Judge(Agent):
@@ -187,16 +169,7 @@ class Judge(Agent):
         answers = [{"role": "user", "content": f"{answer}"} for answer in community_answers]
         messages = self.meta_prompt + answers + [{"role": "user", "content": f"{self.user_prompt}"}]
         
-        # Query OpenAI API and return response
-        return self.query(messages)
-    
-        # Return integer response
-        # while True:
-        #     output = self.query(messages)
-        #     try:
-        #         response = int(output.strip())
-        #         if response in range(1, 5):
-        #             return response
-        #     except ValueError:
-        #         print("Invalid response. Retrying...")
-        #         time.sleep(sleep_time)
+        # Query OpenAI API and return output
+        query_output = self.query(messages)
+        output = {"Name": self.name, "Answer": query_output.answer, "Reason": query_output.reason}
+        return output
