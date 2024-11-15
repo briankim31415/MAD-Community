@@ -1,4 +1,5 @@
 import json
+import sys
 
 _config = None
 
@@ -66,6 +67,10 @@ def load_network_config(preset_config: int=0) -> list:
 
 
 def clear_network_config(num_communities: int):
+    # Resume program if not creating new network
+    if num_communities == 0:
+        return
+
     # Column headers
     result = []
     result.append("  To \u2192    " + " ".join(f"C{i+1}" for i in range(num_communities)) + "  J")
@@ -86,7 +91,9 @@ def clear_network_config(num_communities: int):
         file.write(output)
 
     print(f"Network matrix of {num_communities} communities initialized.")
-    return
+    
+    # Exit program
+    sys.exit()
 
 
 def set_network_config(preset_index: int):

@@ -10,7 +10,6 @@ from stats import get_statistics
 # Load config
 from config_loader import load_config, clear_network_config
 config = load_config()
-data_path = config['data_path']
 output_path = config['output_path']
 random_order = config['random_order']
 verbose = config['verbose']
@@ -22,28 +21,15 @@ class MADCommunity:
     """
     MAD-Community class to run the network
     Attributes:
-        answer_list (list): List of answers from agents
-        data (pd.DataFrame): Dataframe
+        None
     Methods:
-        __init__() -> None: Initialize MAD-Community
         parse_data() -> pd.DataFrame: Parse data from CSV file
-        get_statistics() -> None: Calculates and dumps MAD-Community statistics to JSON file
+        run_gpqa_baseline() -> None: Run MAD-Community on GPQA dataset
         run_cosmosqa() -> None: Run MAD-Community on CosmosQA dataset
+        run_gpqa() -> list: Run MAD-Community on GPQA dataset
     """
-    def __init__(self) -> None:
-        """
-        Initialize MAD-Community
-        Args:
-            None
-        Attributes:
-            answer_list (list): List of answers from agents
-            data (pd.DataFrame): Dataframe
-        """
-        self.answer_list = []
-        self.data = self.parse_data()
 
-
-    def parse_data(self) -> pd.DataFrame:
+    def parse_data(self, data_path: str) -> pd.DataFrame:
         """
         Parse data from CSV file and return ordered or random questions
         Args:
@@ -58,10 +44,13 @@ class MADCommunity:
             return data.head(num_questions)
 
 
-    def run_baseline(self) -> None:
+    def run_gpqa_baseline(self) -> None:
+        # Get data
+        data = self.parse_data("gpqa_dataset/gpqa_main.csv")
+        
         count_correct = 0
         count_total = 0
-        for question in tqdm(self.data.itertuples(), desc="Processing", total=len(self.data), ncols=100, bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"):
+        for question in tqdm(data.itertuples(), desc="Processing", total=len(data), ncols=100, bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"):
             print(f"\n\n ########## QUESTION {question[0] + 1} ##########" if verbose else "", end='')
 
             format_question = f"Context paragraph: {question[2]}\n\nQuestion: {question[3]}\n\nOption 1: {question[4]}\nOption 2: {question[5]}\nOption 3: {question[6]}\nOption 4: {question[7]}\n\nChoose the correct option (1-4) and strictly output **a single integer**."
@@ -110,6 +99,9 @@ class MADCommunity:
         Returns:
             None
         """
+        # Get data
+        data = self.parse_data("cosmosqa_train.csv")
+
         # Init counters
         count_correct = 0
         count_total = 0
@@ -145,10 +137,6 @@ class MADCommunity:
             # Skip question if response is None
             if response is None:
                 continue
-            
-            # Store all agents answer list for statistics
-            stats = {'correct_answer': answer, 'agent_answers': network.get_agent_answers()}
-            self.answer_list.append(stats)
 
             # Check if answer is correct
             correct = (response == answer)
@@ -171,21 +159,24 @@ class MADCommunity:
         Returns:
             None
         """
+        # Get data
+        data = self.parse_data("gpqa_dataset/gpqa_main.csv")
+
         # Init counters and responses for statistics
         count_correct = 0
         count_total = 0
         response_stats = []
         
         # GPQA Column indices
-        question_col_idx = self.data.columns.get_loc("Question") + 1
-        correct_col_idx = self.data.columns.get_loc("Correct Answer") + 1
-        incorrect1_col_idx = self.data.columns.get_loc("Incorrect Answer 1") + 1
-        incorrect2_col_idx = self.data.columns.get_loc("Incorrect Answer 2") + 1
-        incorrect3_col_idx = self.data.columns.get_loc("Incorrect Answer 3") + 1
-        canary_col_idx = self.data.columns.get_loc("Canary String") + 1
+        question_col_idx = data.columns.get_loc("Question") + 1
+        correct_col_idx = data.columns.get_loc("Correct Answer") + 1
+        incorrect1_col_idx = data.columns.get_loc("Incorrect Answer 1") + 1
+        incorrect2_col_idx = data.columns.get_loc("Incorrect Answer 2") + 1
+        incorrect3_col_idx = data.columns.get_loc("Incorrect Answer 3") + 1
+        canary_col_idx = data.columns.get_loc("Canary String") + 1
 
         # Loop through questions and print TQDM progress bar
-        for row in tqdm(self.data.itertuples(), desc="Processing", total=len(self.data), ncols=100, bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"):
+        for row in tqdm(data.itertuples(), desc="Processing", total=len(data), ncols=100, bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"):
             question_id = row[canary_col_idx]
             print(f"\n\n ########## QUESTION {count_total+1} {{{question_id}}} ##########\n" if verbose else "", end='')
 
@@ -219,7 +210,7 @@ class MADCommunity:
 
 
 if __name__ == "__main__":
-    # clear_network_config(create_num_communities)
+    clear_network_config(create_num_communities)
     gpqa = MADCommunity()
     response_stats = gpqa.run_gpqa()
     get_statistics(response_stats, output_path)

@@ -1,12 +1,10 @@
 {
     "verbose": true,
-    "data_path": "/gpqa_dataset/gpqa_main.csv",
     "output_path": "./outputs/",
-    "network_path": "./config",
     "network_preset": 1,
+    "create_num_communities": 0,
     "random_order": false,
     "num_questions": 30,
-    "create_num_communities": 9,
     "num_agents": 2,
     "num_rounds": 3,
     "sleep_time": 0.5,

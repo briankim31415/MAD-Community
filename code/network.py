@@ -4,7 +4,6 @@ from node import Community, Judge
 from config_loader import load_config, load_network_config
 config = load_config()
 verbose = config['verbose']
-network_path = config['network_path']
 network_preset = config['network_preset']
 
 
