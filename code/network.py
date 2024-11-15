@@ -31,6 +31,7 @@ class Network:
             judge (Judge): Judge agent
             communities (list): List of communities in the network
         """
+        self.all_responses = []
         self.judge = Judge(question)
         self.communities = self.create_communities(question)
     
@@ -80,12 +81,11 @@ class Network:
                 if com.check_listeners():
                     # Save agent answers and get community final responses
                     print(f"\n\n\n\t======|| {com.name} ||======\n" if verbose else "", end='')
-                    # com.test_community()
                     community_answers = com.run_community()
-                    # com_responses.append(community_answers[-1])
-                    # self.agent_answers.append(community_answers)
+                    self.all_responses.append(community_answers)
 
         # Get final answer from all communities
         judge_response = self.judge.run_judge()
+        self.all_responses.append(judge_response)
         print(f"      Judge Verdict: {judge_response['Answer']}\n\n" if verbose else "", end='')
-        return judge_response
+        return self.all_responses

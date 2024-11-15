@@ -5,6 +5,7 @@ from tqdm import tqdm
 from openai import OpenAI
 import time
 import random
+from stats import get_statistics
 
 # Load config
 from config_loader import load_config, clear_network_config
@@ -97,7 +98,7 @@ class MADCommunity:
             count_correct += 1 if correct else 0
             count_total += 1
 
-            with open(output_path, 'w') as f:
+            with open(f"{output_path}baseline_output.json", 'w') as f:
                 json.dump({'correct': count_correct, 'total': count_total}, f, indent=4)
 
 
@@ -158,11 +159,11 @@ class MADCommunity:
             count_total += 1
 
             # Save correct count to JSON file
-            with open(output_path, 'w') as f:
+            with open(f"{output_path}cosmosqa_output.json", 'w') as f:
                 json.dump({'correct': count_correct, 'total': count_total}, f, indent=4)
         
         
-    def run_gpqa(self) -> None:
+    def run_gpqa(self) -> list:
         """
         Run MAD-Community on GPQA dataset
         Args:
@@ -170,9 +171,10 @@ class MADCommunity:
         Returns:
             None
         """
-        # Init counters
+        # Init counters and responses for statistics
         count_correct = 0
         count_total = 0
+        response_stats = []
         
         # GPQA Column indices
         question_col_idx = self.data.columns.get_loc("Question") + 1
@@ -196,12 +198,9 @@ class MADCommunity:
 
             # Get answer from network
             network = Network(question=prompt)
-            response = network.run_network()
-            ans_choice = response['Answer']
-            
-            # Store all agents answer list for statistics
-            # stats = {'correct_answer': correct_idx + 1, 'agent_answers': network.get_agent_answers()}
-            # self.answer_list.append(stats)
+            all_responses = network.run_network()
+            ans_choice = all_responses[-1]['Answer']
+            response_stats.append({'correct_answer': correct_idx + 1, 'all_responses': all_responses})
 
             # Check if answer is correct
             print(f"\nCorrect_idx: {correct_idx}, Response: {ans_choice}\n")
@@ -213,11 +212,14 @@ class MADCommunity:
             count_total += 1
 
             # Save correct count to JSON file
-            with open(output_path, 'w') as f:
+            with open(f"{output_path}gpqa_main_output.json", 'w') as f:
                 json.dump({'correct': count_correct, 'total': count_total}, f, indent=4)
+        
+        return response_stats
 
 
 if __name__ == "__main__":
-    clear_network_config(create_num_communities)
-    # gpqa = MADCommunity()
-    # gpqa.run_gpqa()
+    # clear_network_config(create_num_communities)
+    gpqa = MADCommunity()
+    response_stats = gpqa.run_gpqa()
+    get_statistics(response_stats, output_path)
