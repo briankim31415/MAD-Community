@@ -32,7 +32,7 @@ class Agent:
         format_chat_hist(chat_hist: list) -> list: Format community chat history
         ask(chat_hist: list, end: bool=False) -> json: Ask the agent a question based on the chat history
     """
-    def __init__(self, name: str, question: str, temperature: float=1.0) -> None:
+    def __init__(self, name: str, question: str, temperature: float=1.0, start: bool=False) -> None:
         """
         Initialize an agent
         Args:
@@ -48,12 +48,14 @@ class Agent:
         """
         self.name = name
         self.temperature = temperature
-        self.model_name = chat_models[agent_model_index]
-        format_meta_prompt = load_agent_meta_prompt().format(insert_question=question)
-        self.meta_prompt = [{"role": "system", "content": format_meta_prompt}]
-        self.user_prompt = load_agent_user_prompt()
         self.client = OpenAI()
 
+        # Agent specific initialization
+        self.model_name = chat_models[agent_model_index]
+        format_meta_prompt = load_agent_meta_prompt(start).format(insert_question=question)
+        self.meta_prompt = [{"role": "system", "content": format_meta_prompt}]
+        self.user_prompt = load_agent_user_prompt().format(agent_name=name)
+    
 
     @backoff.on_exception(backoff.expo, OpenAIError, max_tries=20, max_time=60)
     def query(self, messages: list) -> str:
@@ -107,7 +109,7 @@ class Agent:
         return agent_chat_hist
     
 
-    def ask(self, chat_hist: list, end: bool=False) -> dict:
+    def ask(self, chat_hist: list) -> dict:
         """
         Ask the agent a question based on the chat history
         Args:
@@ -118,15 +120,29 @@ class Agent:
         """
         # Format community chat history
         agent_chat_hist = self.format_chat_hist(chat_hist)
-        messages = self.meta_prompt + agent_chat_hist + [{"role": "user", "content": self.user_prompt.format(agent_name=self.name)}]
+        messages = self.meta_prompt + agent_chat_hist + [{"role": "user", "content": self.user_prompt}]
 
         # Query OpenAI API and return output
-        query_output = self.query(messages)
-        output = {"Name": self.name, "Answer": query_output.answer, "Reason": query_output.reason}
+        tries = 0
+        while True:
+            if tries >= 2:
+                print(f"\n\nToo many invalid response. Giving no response.\n\n")
+                break
+
+            try:
+                query_output = self.query(messages)
+                output = {"Name": self.name, "Answer": query_output.answer, "Reason": query_output.reason}
+                tries += 1
+                if 1 <= query_output.answer <= 4:
+                    break
+            except Exception as e:
+                print(f"\nTry number: {tries} >> {e}")
+                continue
+        # output = {"Name": self.name, "Answer": 1, "Reason": "Test reason"}
         return output
     
     
-class Judge(Agent):
+class CommunityJudge(Agent):
     """
     Judge agent class to interact with OpenAI API
     Attributes:
@@ -152,24 +168,9 @@ class Judge(Agent):
             user_prompt (str): User prompt for the judge
         """
         super().__init__(name, question, temperature)
+
+        # Judge specific initialization
         self.model_name = chat_models[judge_model_index]
         format_meta_prompt = load_judge_meta_prompt().format(insert_question=question)
         self.meta_prompt = [{"role": "system", "content": format_meta_prompt}]
         self.user_prompt = load_judge_user_prompt()
-    
-    def ask(self, community_answers: "list[str]") -> str:
-        """
-        Ask the judge a question based on the community answers
-        Args:
-            community_answers (list): Community answers
-        Returns:
-            str: Judge's response
-        """
-        # Format community answers
-        answers = [{"role": "user", "content": f"{answer}"} for answer in community_answers]
-        messages = self.meta_prompt + answers + [{"role": "user", "content": f"{self.user_prompt}"}]
-        
-        # Query OpenAI API and return output
-        query_output = self.query(messages)
-        output = {"Name": self.name, "Answer": query_output.answer, "Reason": query_output.reason}
-        return output

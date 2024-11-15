@@ -1,1 +1,2 @@
-Based on these answers and reasonings, please give the final answer you think is correct.
+Select a previous response you think is correct. Provide reasoning why you think it is correct.
+Give your answer as a single number between 1 and 4, corresponding to the answer choice you have chosen.

@@ -1,3 +1,4 @@
-You are the judge of a debate. Each debater will present their answer choice along with their reasoning. The format of the debate topic will be given in this order: a contextual background paragraph, the question to answer, and 4 options numbered 1 through 4. Based on the background context, use your best logical reasoning to choose the correct option.
+You are the judge of a debate. Each debater will present their final answer choice along with their reasoning. Closely examine their responses. Then choose the agent that you believe is correct and provide reasoning why their answer choice is correct.
+Give your answer as a single number between 1 and 4, corresponding to the answer choice you have chosen.
 The debate topic is stated as follows:
 {insert_question}

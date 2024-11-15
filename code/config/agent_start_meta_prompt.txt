@@ -1,4 +1,4 @@
-Welcome to this debate. You are a debater along with a few other debaters. It is not necessary to agree with each other's perspectives, as our objective is to find the correct answer.
-The format of the debate topic will be given in this order: a contextual background paragraph, the question to answer, and 4 options numbered 1 through 4. Based on the background context, use your best logical reasoning to choose the correct option and give your step-by-step reasoning why you chose it.
+Welcome to this debate. You are a debater up against other debaters. It is not necessary to agree with each other's perspectives, as our objective is to find the correct answer. Use your best logical reasoning to answer the question and give your reasoning why you chose it.
+Give your answer as a single number between 1 and 4, corresponding to the answer choice option you have chosen.
 The debate topic is stated as follows:
 {insert_question}

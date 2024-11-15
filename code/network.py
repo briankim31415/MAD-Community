@@ -1,11 +1,11 @@
-from agent import Judge
-from community import Community
+from node import Community, Judge
 
 # Load config
-from config_loader import load_config
+from config_loader import load_config, load_network_config
 config = load_config()
 verbose = config['verbose']
-num_communities = config['num_communities']
+network_path = config['network_path']
+network_preset = config['network_preset']
 
 
 class Network:
@@ -31,10 +31,9 @@ class Network:
             judge (Judge): Judge agent
             communities (list): List of communities in the network
         """
-        self.agent_answers = []
         self.judge = Judge(question)
         self.communities = self.create_communities(question)
-
+    
 
     def create_communities(self, question: str) -> list:
         """
@@ -44,57 +43,49 @@ class Network:
         Returns:
             list: List of communities in the network
         """
+        starting, matrix, temp_list = load_network_config(network_preset)
+
         com_list = []
-        community_temps = [1] * num_communities
-        for temp in community_temps:
-            C = Community(question, temp)
+        for i, temp in enumerate(temp_list):
+            start = True if starting[i] == 1 else False
+            C = Community(f"Community {i+1}", question, temp, start)
             com_list.append(C)
-        return com_list
+        
+        com_list.append(self.judge)
+
+        # Add listeners and senders
+        for from_node, row in enumerate(matrix):
+            for to_node, val in enumerate(row):
+                # Check if from and to nodes are different
+                if val == 1 and from_node != to_node:
+                    com_list[from_node].add_send(com_list[to_node])
+        
+        # Return list of communities minus judge
+        return com_list[:-1]
     
-
-    def get_agent_answers(self) -> list:
-        """
-        Get answers from all agents
-        Args:
-            None
-        Returns:
-            list: List of answers from all agents
-        """
-        return self.agent_answers
     
-
-    def get_community_responses(self) -> list:
+    def run_network(self) -> dict:
         """
-        Get responses from all communities
+        Run the network to get final answer
         Args:
             None
         Returns:
-            list: List of responses from all communities
+            dict: Final answer from the network
         """
-        com_responses = []
-        for i, community in enumerate(self.communities):
-            # Save agent answers and get community final responses
-            print(f"\n >> COMMUNITY {i+1} <<\n" if verbose else "", end='')
-            community_answers = community.get_chat_hist()
-            com_responses.append(community_answers[-1])
-            self.agent_answers.append(community_answers)
+        # com_responses = []
 
-        return com_responses
+        while not self.judge.check_listeners():
+            # Get responses from all communities
+            for com in self.communities:
+                if com.check_listeners():
+                    # Save agent answers and get community final responses
+                    print(f"\n\n\n\t======|| {com.name} ||======\n" if verbose else "", end='')
+                    # com.test_community()
+                    community_answers = com.run_community()
+                    # com_responses.append(community_answers[-1])
+                    # self.agent_answers.append(community_answers)
 
-
-    def get_judge_answer(self) -> str:
-        """
-        Get final answer from all communities
-        Args:
-            None
-        Returns:
-            str: Judge's final answer
-        """
-        # Get responses from all communities
-        responses = self.get_community_responses()
-        combined_responses = [f"Final answer: {response['Answer']}\n\nReason: {response['Reason']}" for response in responses]
-
-        # Get and return judge's answer
-        judge_response = self.judge.ask(combined_responses)
-        print(f"\n\n - Judge Verdict: {judge_response['Answer']}\n\n" if verbose else "", end='')
-        return judge_response['Answer']
+        # Get final answer from all communities
+        judge_response = self.judge.run_judge()
+        print(f"      Judge Verdict: {judge_response['Answer']}\n\n" if verbose else "", end='')
+        return judge_response
