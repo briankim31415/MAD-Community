@@ -10,6 +10,7 @@ from stats import get_statistics
 # Load config
 from config_loader import load_config, clear_network_config
 config = load_config()
+test_mode = config['test_mode']
 output_path = config['output_path']
 random_order = config['random_order']
 verbose = config['verbose']
@@ -178,7 +179,7 @@ class MADCommunity:
         # Loop through questions and print TQDM progress bar
         for row in tqdm(data.itertuples(), desc="Processing", total=len(data), ncols=100, bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"):
             question_id = row[canary_col_idx]
-            print(f"\n\n ########## QUESTION {count_total+1} {{{question_id}}} ##########\n" if verbose else "", end='')
+            print(f"\n\n ########## QUESTION {count_total+1} {{{question_id}}} ##########" if verbose else "", end='')
 
             # Format question and answer
             question = row[question_col_idx]
@@ -194,7 +195,6 @@ class MADCommunity:
             response_stats.append({'correct_answer': correct_idx + 1, 'all_responses': all_responses})
 
             # Check if answer is correct
-            print(f"\nCorrect_idx: {correct_idx}, Response: {ans_choice}\n")
             correct = (correct_idx + 1 == ans_choice)
             print(f"{'Correct!' if correct else 'Wrong!'} The answer is...\nOption {correct_idx + 1}: {choices[correct_idx]}\n\n" if verbose else "", end='')
 
@@ -203,8 +203,9 @@ class MADCommunity:
             count_total += 1
 
             # Save correct count to JSON file
-            with open(f"{output_path}gpqa_main_output.json", 'w') as f:
-                json.dump({'correct': count_correct, 'total': count_total}, f, indent=4)
+            if not test_mode:
+                with open(f"{output_path}gpqa_main_output.json", 'w') as f:
+                    json.dump({'correct': count_correct, 'total': count_total}, f, indent=4)
         
         return response_stats
 
@@ -213,4 +214,4 @@ if __name__ == "__main__":
     clear_network_config(create_num_communities)
     gpqa = MADCommunity()
     response_stats = gpqa.run_gpqa()
-    get_statistics(response_stats, output_path)
+    get_statistics(response_stats)

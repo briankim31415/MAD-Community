@@ -1,2 +1,2 @@
-Select a previous response you think is correct. Provide reasoning why you think it is correct.
+Select one of the agent responses above you think is correct. Provide reasoning why you think it is correct.
 Give your answer as a single number between 1 and 4, corresponding to the answer choice you have chosen.

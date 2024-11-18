@@ -79,7 +79,7 @@ class Network:
             for com in self.communities:
                 if com.check_listeners():
                     # Save agent answers and get community final responses
-                    print(f"\n\n\n\t======|| {com.name} ||======\n" if verbose else "", end='')
+                    print(f"\n======|| {com.name} ||======" if verbose else "", end='')
                     community_answers = com.run_community()
                     self.all_responses.append(community_answers)
 

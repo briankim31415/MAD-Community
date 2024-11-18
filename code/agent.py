@@ -6,6 +6,7 @@ from pydantic import BaseModel
 # Load config
 from config_loader import *
 config = load_config()
+test_mode = config['test_mode']
 sleep_time = config['sleep_time']
 chat_models = config['chat_models']
 agent_model_index = config['agent_model_index']
@@ -118,6 +119,10 @@ class Agent:
         Returns:
             JSON: Agent's response
         """
+        # Check if test mode is enabled
+        if test_mode:
+            return {"Name": self.name, "Answer": 1, "Reason": "Test reason"}
+
         # Format community chat history
         agent_chat_hist = self.format_chat_hist(chat_hist)
         messages = self.meta_prompt + agent_chat_hist + [{"role": "user", "content": self.user_prompt}]
@@ -138,7 +143,7 @@ class Agent:
             except Exception as e:
                 print(f"\nTry number: {tries} >> {e}")
                 continue
-        # output = {"Name": self.name, "Answer": 1, "Reason": "Test reason"}
+            
         return output
     
     

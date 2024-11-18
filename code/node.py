@@ -5,6 +5,8 @@ from agent import CommunityJudge
 from config_loader import load_config
 config = load_config()
 verbose = config['verbose']
+verbose_message_passing = config['verbose_message_passing']
+verbose_responses = config['verbose_responses']
 num_agents = config['num_agents']
 num_rounds = config['num_rounds']
 
@@ -24,7 +26,7 @@ class Node:
 
     def listener(self, response: dict) -> None:
         if response['Name'] in self.listen_list:
-            # print(f"\t{self.name} received {response['Name']}\n" if verbose else "", end='')
+            print(f"\t{self.name} received {response['Name']}\n" if verbose_message_passing else "", end='')
             self.listen_list.remove(response['Name'])
             add_response = response.copy()
             add_response['Name'] = f"[Previous Response {len(self.chat_hist)+1}]"
@@ -105,12 +107,12 @@ class Community(Node):
         # Get final judge answer for community
         final_answer = self.community_judge.ask(self.chat_hist[-num_agents:])
         self.chat_hist.append(final_answer)
-        # print(f"{self.name} Judge chose Option {final_answer['Answer']}\n   {final_answer['Reason']}\n\n" if verbose else "", end='')
-        print(f"{self.name} Judge chose Option {final_answer['Answer']}\n\n" if verbose else "", end='')
+        print(f"\n + {self.name} Judge chose Option {final_answer['Answer']} +\n" if verbose else "", end='')
+        print(f"   {final_answer['Reason']}\n" if verbose_responses else "", end='')
         
 
         # Feed response to communities
-        # print(f"\n-- {self.name} sending to: {', '.join(com.name for com in self.send_list)}\n" if verbose else "", end='')
+        print(f"\n-- {self.name} sending to: {', '.join(com.name for com in self.send_list)}\n" if verbose_message_passing else "", end='')
         for community in self.send_list:
             community.listener(final_answer)
 
@@ -133,8 +135,8 @@ class Community(Node):
                 # Get response from agent
                 response = agent.ask(self.chat_hist)
                 self.chat_hist.append(response)
-                # print(f"{response['Name']} chose Option {response['Answer']}\n   {response['Reason']}\n\n" if verbose else "", end='')
-                print(f"{response['Name']} chose Option {response['Answer']}\n" if verbose else "", end='')
+                print(f"{response['Name']}: Option {response['Answer']}\n" if verbose else "", end='')
+                print(f"   {response['Reason']}\n\n" if verbose_responses else "", end='')
 
 
 class Judge(Node):
@@ -150,5 +152,5 @@ class Judge(Node):
     
 
     def run_judge(self) -> dict:
-        print("\n\n <<< Running Judge node >>>\n" if verbose else "", end='')
+        print("\n <<< Running Judge node >>>\n" if verbose else "", end='')
         return self.judge.ask(self.chat_hist)
