@@ -69,7 +69,7 @@ def get_statistics(response_stats: list) -> None:
         f.write("Community Scores\n")
         for i, percent in enumerate(stats['Community_Percent']):
             f.write(f"\tCommunity {i+1}: {percent}% correct ({stats['Community_Score'][i]}/{num_questions})\n")
-        f.write(f"Agents Score: {stats['Agents_Score']}% correct\n")
-        f.write(f"\n[Final Result]\nJudge Score: {stats['Judge_Score']}% correct ({stats['Judge_Score']}/{num_questions})\n\n")
+        f.write(f"Agents Score: {stats['Agents_Percent']}% correct\n")
+        f.write(f"\n[Final Result]\nJudge Score: {stats['Judge_Percent']}% correct ({stats['Judge_Score']}/{num_questions})\n\n")
 
     return
