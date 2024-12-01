@@ -11,6 +11,7 @@ sleep_time = config['sleep_time']
 chat_models = config['chat_models']
 agent_model_index = config['agent_model_index']
 judge_model_index = config['judge_model_index']
+comm_judge_temp = config['comm_judge_temp']
 
 class Format(BaseModel):
     answer: int
@@ -18,22 +19,7 @@ class Format(BaseModel):
 
 
 class Agent:
-    """
-    Agent class to interact with OpenAI API
-    Attributes:
-        name (str): Agent's name
-        temperature (float): Temperature for sampling
-        model_name (str): OpenAI model name
-        meta_prompt (list): Meta-prompt for the agent
-        user_prompt (str): User prompt for the agent
-        end_prompt (str): Ending prompt for the agent
-        client (OpenAI): OpenAI client
-    Methods:
-        query(messages: list) -> str: Query OpenAI API
-        format_chat_hist(chat_hist: list) -> list: Format community chat history
-        ask(chat_hist: list, end: bool=False) -> json: Ask the agent a question based on the chat history
-    """
-    def __init__(self, name: str, question: str, temperature: float=1.0, start: bool=False) -> None:
+    def __init__(self, name: str, question: dict, temperature: float=0.7) -> None:
         """
         Initialize an agent
         Args:
@@ -50,12 +36,45 @@ class Agent:
         self.name = name
         self.temperature = temperature
         self.client = OpenAI()
+        self.question = question
 
         # Agent specific initialization
         self.model_name = chat_models[agent_model_index]
-        format_meta_prompt = load_agent_meta_prompt(start).format(insert_question=question)
-        self.meta_prompt = [{"role": "system", "content": format_meta_prompt}]
-        self.user_prompt = load_agent_user_prompt().format(agent_name=name)
+        self.meta_prompt = load_agent_meta_prompt()
+        self.user_prompt = load_agent_user_prompt()
+
+    
+    # Format user prompt
+    def format_user_prompt(self, chat_hist: list) -> str:
+        # Add question and choices to user prompt
+        question = self.question['question']
+        choices = self.question['choices']
+
+        # Add other agents' responses to user prompt
+        if not chat_hist:
+            other_responses = "No other agents have responded yet."
+        else:
+            other_responses = "\n".join([f'{res["Name"]}: Chose {res["Answer"]} because "{res["Reason"]}"' for res in chat_hist])
+
+        # Set agent or judge name
+        if isinstance(self, CommunityJudge):
+            agent_name = "Judge"
+        else:
+            agent_name = self.name
+        
+        print(f"\n\nAgent name: {agent_name}\n\n")
+
+        # Replace placeholders in user prompt
+        replace_dict = {
+            "question": question,
+            "choice_1": choices[0],
+            "choice_2": choices[1],
+            "choice_3": choices[2],
+            "choice_4": choices[3],
+            "other_responses": other_responses,
+            "agent_name": agent_name
+        }
+        return self.user_prompt.format(**replace_dict)
     
 
     @backoff.on_exception(backoff.expo, OpenAIError, max_tries=20, max_time=60)
@@ -84,38 +103,13 @@ class Agent:
         except OpenAIError as ai_err:
             ai_response_msg = ai_err.body["message"]
             raise OpenAIError(f"OpenAI Error: {ai_response_msg}")
-
-
-    def format_chat_hist(self, chat_hist: list) -> list:
-        """
-        Assign community chat history to this agent or other agents
-        Args:
-            chat_hist (list): Community chat history
-        Returns:
-            list: Formatted chat history
-        """
-        # Parse each response in chat history
-        agent_chat_hist = []
-        for response in chat_hist:
-            # Format response from JSON response
-            message = f"Option {response['Answer']}. {response['Reason']}"
-
-            # Check if response is from this agent
-            if response['Name'] == self.name:
-                agent_chat_hist.append({"role": "assistant", "content": message})
-            else:
-                agent_chat_hist.append({"role": "user", "content": f"{response['Name']}: {message}"})
         
-        # Return formatted chat history
-        return agent_chat_hist
-    
 
     def ask(self, chat_hist: list) -> dict:
         """
         Ask the agent a question based on the chat history
         Args:
             chat_hist (list): Community chat history
-            end (bool, optional): Whether it's the last round. Defaults to False.
         Returns:
             JSON: Agent's response
         """
@@ -124,42 +118,31 @@ class Agent:
             return {"Name": self.name, "Answer": 1, "Reason": "Test reason"}
 
         # Format community chat history
-        agent_chat_hist = self.format_chat_hist(chat_hist)
-        messages = self.meta_prompt + agent_chat_hist + [{"role": "user", "content": self.user_prompt}]
+        self.format_user_prompt(chat_hist)
+        messages = [{"role": "system", "content": self.meta_prompt},
+                    {"role": "user", "content": self.format_user_prompt(chat_hist)}]
 
         # Query OpenAI API and return output
         tries = 0
+        fail = False
         while True:
-            if tries >= 2:
-                print(f"\n\nToo many invalid response. Giving no response.\n\n")
-                break
-
             try:
+                tries += 1
                 query_output = self.query(messages)
                 output = {"Name": self.name, "Answer": query_output.answer, "Reason": query_output.reason}
-                tries += 1
+                print("\nSuccess after fail\n" if fail else "", end='')
                 if 1 <= query_output.answer <= 4:
                     break
             except Exception as e:
-                print(f"\nTry number: {tries} >> {e}")
+                print(f"\nTry number {tries} >> {e}")
+                fail = True
                 continue
             
         return output
     
     
 class CommunityJudge(Agent):
-    """
-    Judge agent class to interact with OpenAI API
-    Attributes:
-        name (str): Judge's name
-        temperature (float): Temperature for sampling
-        model_name (str): OpenAI model name
-        meta_prompt (list): Meta-prompt for the agent
-        client (OpenAI): OpenAI client
-    Methods:
-        ask(community_answers: list) -> str: Ask the judge a question based on the community answers
-    """
-    def __init__(self, question: str, name: str='Judge', temperature: float=1.0) -> None:
+    def __init__(self, question: str, name: str='Judge', temperature: float=comm_judge_temp) -> None:
         """
         Initialize a judge agent
         Args:
@@ -176,6 +159,5 @@ class CommunityJudge(Agent):
 
         # Judge specific initialization
         self.model_name = chat_models[judge_model_index]
-        format_meta_prompt = load_judge_meta_prompt().format(insert_question=question)
-        self.meta_prompt = [{"role": "system", "content": format_meta_prompt}]
+        self.meta_prompt = load_judge_meta_prompt()
         self.user_prompt = load_judge_user_prompt()

@@ -1,2 +1,11 @@
-{agent_name}, it is now your turn. You may disagree with other responses and defend your current answer by correcting their responses. You may also change your answer and agree with other responses.
-Give your answer as a single number between 1 and 4, corresponding to the answer choice option you have chosen.
+**Question:** {question}
+**Answer Choices:**
+1) {choice_1}
+2) {choice_2}
+3) {choice_3}
+4) {choice_4}
+
+**Other Agents' Responses:**
+{other_responses}
+
+You are {agent_name}. Critique the responses above and provide your answer (1–4) with your reasoning.

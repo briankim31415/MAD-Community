@@ -10,13 +10,9 @@ def load_config() -> json:
             _config = json.load(f)
     return _config
 
-def load_agent_meta_prompt(start: bool=False) -> str:
-    if start:
-        with open('./config/agent_start_meta_prompt.txt', 'r') as f:
-            return f.read()
-    else:
-        with open('./config/agent_meta_prompt.txt', 'r') as f:
-            return f.read()
+def load_agent_meta_prompt() -> str:
+    with open('./config/agent_meta_prompt.txt', 'r') as f:
+        return f.read()
 
 def load_agent_user_prompt() -> str:
     with open('./config/agent_user_prompt.txt', 'r') as f:

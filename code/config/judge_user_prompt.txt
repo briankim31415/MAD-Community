@@ -1,2 +1,11 @@
-Select one of the agent responses above you think is correct. Provide reasoning why you think it is correct.
-Give your answer as a single number between 1 and 4, corresponding to the answer choice you have chosen.
+**Question:** {question}  
+**Answer Choices:**  
+1) {choice_1}  
+2) {choice_2}  
+3) {choice_3}  
+4) {choice_4}  
+
+**Debate Responses:**  
+{other_responses}
+
+You are the {agent_name}. Evaluate the responses critically and select the final answer (1–4) with reasoning. Consider the clarity, accuracy, and logic of the arguments.

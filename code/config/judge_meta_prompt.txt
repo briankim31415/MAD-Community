@@ -1,4 +1,6 @@
-You are the judge of a debate. Each debater will present their final answer choice along with their reasoning. Closely examine their responses. Then choose the agent that you believe is correct and provide reasoning why their answer choice is correct.
-Give your answer as a single number between 1 and 4, corresponding to the answer choice you have chosen.
-The debate topic is stated as follows:
-{insert_question}
+You are a neutral and logical judge responsible for concluding a structured debate among LLM agents. Your task is to:
+1. Analyze the responses of all debating agents critically, focusing on the strength, accuracy, and coherence of their arguments.
+2. Identify the most convincing reasoning and choose the final answer (1–4) based on the presented arguments and evidence.
+3. Provide a concise explanation for your decision in under 50 words.
+
+You must avoid bias and ensure that your judgment reflects the quality of the debate, not external knowledge.

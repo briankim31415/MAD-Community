@@ -9,6 +9,7 @@ verbose_message_passing = config['verbose_message_passing']
 verbose_responses = config['verbose_responses']
 num_agents = config['num_agents']
 num_rounds = config['num_rounds']
+node_judge_temp = config['node_judge_temp']
 
 
 class Node:
@@ -29,7 +30,7 @@ class Node:
             print(f"\t{self.name} received {response['Name']}\n" if verbose_message_passing else "", end='')
             self.listen_list.remove(response['Name'])
             add_response = response.copy()
-            add_response['Name'] = f"[Previous Response {len(self.chat_hist)+1}]"
+            add_response['Name'] = f"Agent {len(self.chat_hist)+1}"
             self.chat_hist.append(add_response)
         else:
             print(f"\n\n\nERROR: [{self.name}] listener for {response['Name']} not in listen_list.\n")
@@ -60,8 +61,9 @@ class Node:
         community.add_listener(self.name)
 
 
+
 class Community(Node):
-    def __init__(self, name: str, question: str, temperature: float=1.0, start: bool=False) -> None:
+    def __init__(self, name: str, question: dict, temperature: float, start: bool) -> None:
         """
         Initialize a community
         Args:
@@ -72,12 +74,12 @@ class Community(Node):
             answer_list (list): List of answers from agents
             agent_list (list): List of agents in the community
         """
-        super().__init__(name=name, start=start)
+        super().__init__(name, start)
         self.agent_list = self.create_agents(question, temperature)
-        self.community_judge = CommunityJudge(question=question, name=name)
+        self.community_judge = CommunityJudge(question, name)
         
 
-    def create_agents(self, question: str, temperature: float) -> list:
+    def create_agents(self, question: dict, temperature: float) -> list:
         """
         Create agents in the community
         Args:
@@ -88,36 +90,9 @@ class Community(Node):
         """
         agent_list = []
         for i in range(num_agents):
-            agent = Agent(f"Agent {i+1}", question=question, temperature=temperature, start=self.start)
+            agent = Agent(f"Agent {chr(65 + i)}", question, temperature)
             agent_list.append(agent)
         return agent_list
-
-
-    def run_community(self) -> list:
-        """
-        Perform community functions
-        Args:
-            None
-        Returns:
-            list: List of answers from agents
-        """
-        # Get answers from agents
-        self.debate()
-        
-        # Get final judge answer for community
-        final_answer = self.community_judge.ask(self.chat_hist[-num_agents:])
-        self.chat_hist.append(final_answer)
-        print(f"\n + {self.name} Judge chose Option {final_answer['Answer']} +\n" if verbose else "", end='')
-        print(f"   {final_answer['Reason']}\n" if verbose_responses else "", end='')
-        
-
-        # Feed response to communities
-        print(f"\n-- {self.name} sending to: {', '.join(com.name for com in self.send_list)}\n" if verbose_message_passing else "", end='')
-        for community in self.send_list:
-            community.listener(final_answer)
-
-        # Return entire chat history for stat tracking
-        return self.chat_hist
     
 
     def debate(self) -> None:
@@ -139,16 +114,42 @@ class Community(Node):
                 print(f"   {response['Reason']}\n\n" if verbose_responses else "", end='')
 
 
+    def run_community(self) -> list:
+        """
+        Perform community functions
+        Args:
+            None
+        Returns:
+            list: List of answers from agents
+        """
+        # Get answers from agents
+        self.debate()
+        
+        # Get final judge answer for community
+        final_answer = self.community_judge.ask(self.chat_hist[-num_agents:])
+        self.chat_hist.append(final_answer)
+        print(f"\n + {self.name} Judge chose Option {final_answer['Answer']} +\n" if verbose else "", end='')
+        print(f"   {final_answer['Reason']}\n" if verbose_responses else "", end='')
+
+        # Feed response to communities
+        print(f"\n-- {self.name} sending to: {', '.join(com.name for com in self.send_list)}\n" if verbose_message_passing else "", end='')
+        for community in self.send_list:
+            community.listener(final_answer)
+
+        # Return entire chat history for stat tracking
+        return self.chat_hist
+    
+
+
 class Judge(Node):
-    def __init__(self, question: str, name: str='Judge', temperature: float=1.0) -> None:
+    def __init__(self, question: dict, name: str='Judge') -> None:
         """
         Initialize a judge
         Args:
             question (str): Question to ask
-            temperature (float, optional): Temperature for sampling. Defaults to 1.0.
         """
         super().__init__(name=name)
-        self.judge = CommunityJudge(question, name, temperature)
+        self.judge = CommunityJudge(question, name, node_judge_temp)
     
 
     def run_judge(self) -> dict:

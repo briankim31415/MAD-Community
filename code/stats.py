@@ -1,4 +1,4 @@
-from config_loader import load_config, clear_network_config
+from config_loader import load_config, load_network_config
 from datetime import datetime
 config = load_config()
 test_mode = config['test_mode']
@@ -20,8 +20,10 @@ def get_statistics(response_stats: list) -> None:
     if test_mode and not save_stats:
         return
     
-    num_communities = len(response_stats[0]['all_responses']) - 1
-    stats = {   
+    _, matrix, temp_list = load_network_config(network_preset)
+    num_communities = len(matrix)
+    total_agent_responses = num_questions * num_communities * num_agents * num_rounds
+    stats = {
                 'Judge_Score': 0,
                 'Community_Score': [0] * num_communities,
                 'Agents_Score': 0
@@ -41,13 +43,14 @@ def get_statistics(response_stats: list) -> None:
                 if 'Previous Response' not in agent['Name']:
                     stats['Agents_Score'] += 1 if agent['Answer'] == correct_answer else 0
 
-    total_agent_responses = num_questions * num_communities * num_agents * num_rounds
-    stats['Judge_Percent'] = 100 * round(stats['Judge_Score'] / num_questions, 3)
-    stats['Community_Percent'] = [100 * round(score / num_questions, 3) for score in stats['Community_Score']]
-    stats['Agents_Percent'] = 100 * round(stats['Agents_Score'] / total_agent_responses, 2)
+    stats['Judge_Percent'] = round(100 * round(stats['Judge_Score'] / num_questions, 3), 1)
+    stats['Community_Percent'] = [round(100 * round(score / num_questions, 3), 1) for score in stats['Community_Score']]
+    stats['Agents_Percent'] = round(100 * round(stats['Agents_Score'] / total_agent_responses, 2), 1)
 
-    if save_stats:
-        current_time = datetime.now().strftime("%m-%d,%H%M")
+    current_time = datetime.now().strftime("%m-%d,%H%M")
+    if test_mode:
+        file_name = f"test_stats/{current_time}.txt"
+    elif save_stats:
         file_name = f"stats_save/stats_{current_time}.txt"
     else:
         file_name = "stats.txt"
@@ -66,9 +69,9 @@ def get_statistics(response_stats: list) -> None:
         f.write(f"Number of agents: {num_agents}\n")
         f.write(f"Number of rounds: {num_rounds}\n\n")
 
-        f.write("Community Scores\n")
+        f.write("Community {Temp} Scores\n")
         for i, percent in enumerate(stats['Community_Percent']):
-            f.write(f"\tCommunity {i+1}: {percent}% correct ({stats['Community_Score'][i]}/{num_questions})\n")
+            f.write(f"\tCommunity {i+1} {{{temp_list[i]}}}: {percent}% correct ({stats['Community_Score'][i]}/{num_questions})\n")
         f.write(f"Agents Score: {stats['Agents_Percent']}% correct\n")
         f.write(f"\n[Final Result]\nJudge Score: {stats['Judge_Percent']}% correct ({stats['Judge_Score']}/{num_questions})\n\n")
 

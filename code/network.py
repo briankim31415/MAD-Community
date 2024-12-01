@@ -20,7 +20,7 @@ class Network:
         get_community_responses() -> list: Get responses from all communities
         get_judge_answer() -> str: Get final answer from all communities
     """
-    def __init__(self, question: str) -> None:
+    def __init__(self, question: dict) -> None:
         """
         Initialize a network
         Args:
@@ -35,11 +35,11 @@ class Network:
         self.communities = self.create_communities(question)
     
 
-    def create_communities(self, question: str) -> list:
+    def create_communities(self, question: dict) -> list:
         """
         Create communities in the network
         Args:
-            question (str): Question to ask
+            question (dict): Question to ask
         Returns:
             list: List of communities in the network
         """

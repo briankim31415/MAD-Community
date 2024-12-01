@@ -186,10 +186,11 @@ class MADCommunity:
             choices = [row[correct_col_idx], row[incorrect1_col_idx], row[incorrect2_col_idx], row[incorrect3_col_idx]]
             random.shuffle(choices)
             correct_idx = choices.index(row[correct_col_idx])
-            prompt = question + ("\n\n" + "\n".join([f"{i+1}. {choice}" for i, choice in enumerate(choices)]))
+            # prompt = question + ("\n\n" + "\n".join([f"{i+1}) {choice}" for i, choice in enumerate(choices)]))
+            question = {'question': question, 'choices': choices}
 
             # Get answer from network
-            network = Network(question=prompt)
+            network = Network(question)
             all_responses = network.run_network()
             ans_choice = all_responses[-1]['Answer']
             response_stats.append({'correct_answer': correct_idx + 1, 'all_responses': all_responses})
