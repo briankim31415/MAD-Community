@@ -1,2 +1,0 @@
-{agent_name}, it is now your turn. You may disagree with other responses and defend your current answer by correcting their responses. You may also change your answer and agree with other responses.
-Give your answer as a single number between 1 and 4, corresponding to the answer choice option you have chosen.

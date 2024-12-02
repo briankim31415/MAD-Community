@@ -6,7 +6,7 @@ _config = None
 def load_config() -> json:
     global _config
     if _config is None:
-        with open('./config/config.json', 'r') as f:
+        with open('./config/_config.json', 'r') as f:
             _config = json.load(f)
     return _config
 

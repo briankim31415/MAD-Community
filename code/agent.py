@@ -62,8 +62,6 @@ class Agent:
         else:
             agent_name = self.name
         
-        print(f"\n\nAgent name: {agent_name}\n\n")
-
         # Replace placeholders in user prompt
         replace_dict = {
             "question": question,

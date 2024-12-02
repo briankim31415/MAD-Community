@@ -1,4 +1,0 @@
-You are the judge of a debate. Each debater will present their final answer choice along with their reasoning. Closely examine their responses. Then choose the agent that you believe is correct and provide reasoning why their answer choice is correct.
-Give your answer as a single number between 1 and 4, corresponding to the answer choice you have chosen.
-The debate topic is stated as follows:
-{insert_question}

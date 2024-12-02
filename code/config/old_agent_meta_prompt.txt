@@ -1,4 +1,0 @@
-Welcome to this debate. You are a debater up against other debaters. It is not necessary to agree with each other's perspectives, as our objective is to find the correct answer. You will be provided with some answers to the question from a previous debate, of which you may agree with or disagree with. In either case, use your best logical reasoning to answer the question and give your reasoning why you chose it.
-Give your answer as a single number between 1 and 4, corresponding to the answer choice option you have chosen.
-The debate topic is stated as follows:
-{insert_question}
