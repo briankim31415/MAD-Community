@@ -3,6 +3,7 @@ import sys
 
 _config = None
 
+# Load global config file
 def load_config() -> json:
     global _config
     if _config is None:
@@ -10,23 +11,28 @@ def load_config() -> json:
             _config = json.load(f)
     return _config
 
+# Load agent meta prompt
 def load_agent_meta_prompt() -> str:
     with open('./config/agent_meta_prompt.txt', 'r') as f:
         return f.read()
 
+# Load agent user prompt
 def load_agent_user_prompt() -> str:
     with open('./config/agent_user_prompt.txt', 'r') as f:
         return f.read()
 
+# Load judge meta prompt
 def load_judge_meta_prompt() -> str:
     with open('./config/judge_meta_prompt.txt', 'r') as f:
         return f.read()
     
+# Load judge user prompt
 def load_judge_user_prompt() -> str:
     with open('./config/judge_user_prompt.txt', 'r') as f:
         return f.read()
     
 
+# Load network configuration/preset
 def load_network_config(preset_config: int=0) -> list:
     lines = []
     if preset_config == 0:
@@ -62,7 +68,8 @@ def load_network_config(preset_config: int=0) -> list:
     return [starting, matrix, temp_list]
 
 
-def clear_network_config(num_communities: int):
+# Clear manual network configuration file
+def clear_network_config(num_communities: int) -> None:
     # Resume program if not creating new network
     if num_communities == 0:
         return
@@ -92,14 +99,18 @@ def clear_network_config(num_communities: int):
     sys.exit()
 
 
-def set_network_config(preset_index: int):
+# Set network configuration from preset
+def set_network_config(preset_index: int) -> list:
+    # Read from network_config.txt if no preset is chosen
     if preset_index == 0:
         print("\nReading from network_config.txt\n")
         return
 
+    # Read from network_config_presets.txt
     with open("./config/network_config_presets.txt", 'r') as file:
         lines = file.read().splitlines()
 
+    # Get preset lines
     preset_lines = []
     preset_indexes = [i for i, line in enumerate(lines) if line.startswith("[")]
     for i, idx in enumerate(preset_indexes):
@@ -109,7 +120,9 @@ def set_network_config(preset_index: int):
             preset_lines = lines[start_idx:end_idx]
             break
     
+    # Remove empty lines at the end
     while preset_lines and preset_lines[-1].strip() == "":
         preset_lines.pop()
     
+    # Return preset lines
     return preset_lines

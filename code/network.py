@@ -7,50 +7,27 @@ verbose = config['verbose']
 network_preset = config['network_preset']
 
 
+# Network class
 class Network:
-    """
-    Network class to interact with communities
-    Attributes:
-        agent_answers (list): List of answers from all agents
-        judge (Judge): Judge agent
-        communities (list): List of communities in the network
-    Methods:
-        create_communities(question: str) -> list: Create communities in the network
-        get_agent_answers() -> list: Get answers from all agents
-        get_community_responses() -> list: Get responses from all communities
-        get_judge_answer() -> str: Get final answer from all communities
-    """
-    def __init__(self, question: dict) -> None:
-        """
-        Initialize a network
-        Args:
-            question (str): Question to ask
-        Attributes:
-            agent_answers (list): List of answers from all agents
-            judge (Judge): Judge agent
-            communities (list): List of communities in the network
-        """
+    def __init__(self, question: dict):
         self.all_responses = []
         self.judge = Judge(question)
         self.communities = self.create_communities(question)
     
 
+    # Initialize communities in the network
     def create_communities(self, question: dict) -> list:
-        """
-        Create communities in the network
-        Args:
-            question (dict): Question to ask
-        Returns:
-            list: List of communities in the network
-        """
+        # Load network configuration
         starting, matrix, temp_list = load_network_config(network_preset)
 
+        # Create communities
         com_list = []
         for i, temp in enumerate(temp_list):
             start = True if starting[i] == 1 else False
             C = Community(f"Community {i+1}", question, temp, start)
             com_list.append(C)
         
+        # Temporarily add judge to the network for adding listeners
         com_list.append(self.judge)
 
         # Add listeners and senders
@@ -64,18 +41,10 @@ class Network:
         return com_list[:-1]
     
     
+    # Run the network and return all responses
     def run_network(self) -> dict:
-        """
-        Run the network to get final answer
-        Args:
-            None
-        Returns:
-            dict: Final answer from the network
-        """
-        # com_responses = []
-
+        # Run until all listeners are satisfied
         while not self.judge.check_listeners():
-            # Get responses from all communities
             for com in self.communities:
                 if com.check_listeners():
                     # Save agent answers and get community final responses
@@ -83,7 +52,7 @@ class Network:
                     community_answers = com.run_community()
                     self.all_responses.append(community_answers)
 
-        # Get final answer from all communities
+        # Get final answer from all communities and judge
         judge_response = self.judge.run_judge()
         self.all_responses.append(judge_response)
         print(f"      Judge Verdict: {judge_response['Answer']}\n\n" if verbose else "", end='')

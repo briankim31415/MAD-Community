@@ -13,26 +13,15 @@ agent_model_index = config['agent_model_index']
 judge_model_index = config['judge_model_index']
 comm_judge_temp = config['comm_judge_temp']
 
+# Agent response format
 class Format(BaseModel):
     answer: int
     reason: str
 
 
+# Agent class
 class Agent:
-    def __init__(self, name: str, question: dict, temperature: float=0.7) -> None:
-        """
-        Initialize an agent
-        Args:
-            name (str): Agent's name
-            question (str): Question to ask
-            temperature (float, optional): Temperature for sampling. Defaults to 1.0.
-        Attributes:
-            model_name (str): OpenAI model name
-            meta_prompt (list): Meta-prompt for the agent
-            user_prompt (str): User prompt for the agent
-            end_prompt (str): Ending prompt for the agent
-            client (OpenAI): OpenAI client
-        """
+    def __init__(self, name: str, question: dict, temperature: float=0.7):
         self.name = name
         self.temperature = temperature
         self.client = OpenAI()
@@ -75,16 +64,9 @@ class Agent:
         return self.user_prompt.format(**replace_dict)
     
 
+    # Query OpenAI API
     @backoff.on_exception(backoff.expo, OpenAIError, max_tries=20, max_time=60)
     def query(self, messages: list) -> str:
-        """
-        Query OpenAI API
-        Args:
-            messages (list): List of messages in the chat
-        Returns:
-            str: OpenAI API response
-        """
-        # Query OpenAI API
         time.sleep(sleep_time)
         try:
             response = self.client.beta.chat.completions.parse(
@@ -103,14 +85,8 @@ class Agent:
             raise OpenAIError(f"OpenAI Error: {ai_response_msg}")
         
 
+    # Ask agent a question
     def ask(self, chat_hist: list) -> dict:
-        """
-        Ask the agent a question based on the chat history
-        Args:
-            chat_hist (list): Community chat history
-        Returns:
-            JSON: Agent's response
-        """
         # Check if test mode is enabled
         if test_mode:
             return {"Name": self.name, "Answer": 1, "Reason": "Test reason"}
@@ -132,27 +108,17 @@ class Agent:
                 if 1 <= query_output.answer <= 4:
                     break
             except Exception as e:
+                # Retry if there's an error
                 print(f"\nTry number {tries} >> {e}")
                 fail = True
                 continue
             
         return output
     
-    
+
+# Agent subclass for community judge
 class CommunityJudge(Agent):
-    def __init__(self, question: str, name: str='Judge', temperature: float=comm_judge_temp) -> None:
-        """
-        Initialize a judge agent
-        Args:
-            question (str): Question to ask
-            name (str, optional): Judge's name. Defaults to 'Judge'.
-            temperature (float, optional): Temperature for sampling. Defaults to 1.0.
-            model_name (str, optional): OpenAI model name. Defaults to 'gpt-3.5-turbo'.
-        Attributes:
-            model_name (str): OpenAI model name
-            meta_prompt (list): Meta-prompt for the agent
-            user_prompt (str): User prompt for the judge
-        """
+    def __init__(self, question: str, name: str='Judge', temperature: float=comm_judge_temp):
         super().__init__(name, question, temperature)
 
         # Judge specific initialization

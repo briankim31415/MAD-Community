@@ -9,17 +9,14 @@ num_questions = config['num_questions']
 num_agents = config['num_agents']
 num_rounds = config['num_rounds']
 
+
+# Calculate and dump MAD-Community statistics to JSON file
 def get_statistics(response_stats: list) -> None:
-    """
-    Calculates and dumps MAD-Community statistics to JSON file
-    Args:
-        None
-    Returns:
-        None
-    """
+    # Check if test mode is enabled
     if test_mode and not save_stats:
         return
     
+    # Get network parameters
     _, matrix, temp_list = load_network_config(network_preset)
     num_communities = len(matrix)
     total_agent_responses = num_questions * num_communities * num_agents * num_rounds
@@ -29,24 +26,31 @@ def get_statistics(response_stats: list) -> None:
                 'Agents_Score': 0
             }
 
+    # Iterate through each question and calculate scores
     for question in response_stats:
+        # Calculate judge score
         correct_answer = question['correct_answer']
-        all_responses = question['all_responses']
         judge_answer = all_responses.pop()['Answer']
         stats['Judge_Score'] += 1 if judge_answer == correct_answer else 0
 
+        # Calculate community and agent scores
+        all_responses = question['all_responses']
         for i, com_chat_hist in enumerate(all_responses):
+            # Calculate community score
             com_answer = com_chat_hist.pop()['Answer']
             stats['Community_Score'][i] += 1 if com_answer == correct_answer else 0
 
+            # Calculate agent score
             for agent in com_chat_hist:
                 if 'Previous Response' not in agent['Name']:
                     stats['Agents_Score'] += 1 if agent['Answer'] == correct_answer else 0
 
+    # Calculate percentages
     stats['Judge_Percent'] = round(100 * round(stats['Judge_Score'] / num_questions, 3), 1)
     stats['Community_Percent'] = [round(100 * round(score / num_questions, 3), 1) for score in stats['Community_Score']]
     stats['Agents_Percent'] = round(100 * round(stats['Agents_Score'] / total_agent_responses, 2), 1)
 
+    # Set file name based on test mode and timestamp
     current_time = datetime.now().strftime("%m-%d,%H%M")
     if test_mode:
         file_name = f"test_stats/{current_time}.txt"
