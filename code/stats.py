@@ -30,11 +30,11 @@ def get_statistics(response_stats: list) -> None:
     for question in response_stats:
         # Calculate judge score
         correct_answer = question['correct_answer']
+        all_responses = question['all_responses']
         judge_answer = all_responses.pop()['Answer']
         stats['Judge_Score'] += 1 if judge_answer == correct_answer else 0
 
         # Calculate community and agent scores
-        all_responses = question['all_responses']
         for i, com_chat_hist in enumerate(all_responses):
             # Calculate community score
             com_answer = com_chat_hist.pop()['Answer']
