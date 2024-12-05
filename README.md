@@ -51,6 +51,20 @@
 
 ## Network Config Instructions
 
+#### Using a Network Preset
+
+To use a preset...
+    - Set the `create_num_communities` parameter in `config.json` to `0` 
+    - Set the `network_preset` value to the matching index in `network_config_presets.txt`
+
+Presets:
+    - `1` is the Short/Long Paths model\
+    - `2` is the Feed Forward model\
+    - `3` is the Cascade model
+
+
+#### Defining Custom Network
+
 To define a custom network of nodes, follow the following steps:
 
 1. **Set number of communities**
