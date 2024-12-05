@@ -54,13 +54,13 @@
 #### Using a Network Preset
 
 To use a preset...
-    - Set the `create_num_communities` parameter in `config.json` to `0` 
-    - Set the `network_preset` value to the matching index in `network_config_presets.txt`
+* Set the `create_num_communities` parameter in `config.json` to `0`
+* Set the `network_preset` value to the matching index in `network_config_presets.txt`
 
 Presets:
-    - `1` is the Short/Long Paths model\
-    - `2` is the Feed Forward model\
-    - `3` is the Cascade model
+* `1`: Short/Long Paths Model
+* `2`: Feed Forward Model
+* `3`: Cascade Model
 
 
 #### Defining Custom Network
